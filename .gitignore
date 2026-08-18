@@ -17,3 +17,4 @@ desktop/config.json
 .vscode/
 *.log
 .DS_Store
+/screenshots/

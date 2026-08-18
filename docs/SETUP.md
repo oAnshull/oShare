@@ -150,7 +150,7 @@ The signing configuration, keystore, and APKs are ignored by Git. See Android's 
 
 Set the web name with the SAM `BrandName` parameter. Set the Windows name through `desktop/install.ps1` and Android values through `android/brand.properties`.
 
-Use one square PNG for both the website and Android app:
+Use one square PNG for the website, Android app, and Windows context menu:
 
 ```powershell
 Set-Location ..

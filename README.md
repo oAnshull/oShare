@@ -46,6 +46,14 @@ You host it on your own AWS account and can use your own domain, name, and logo.
 | **Android** | Tap **Share** on any file → choose oShare → choose an expiry → share the copied link |
 | **Web** | Open the admin page → drop in a file → choose an expiry → copy the link |
 
+## Windows upload flow
+
+| Right-click a file | Choose an expiry |
+| --- | --- |
+| ![oShare in the Windows file context menu](docs/screenshots/windows-context-menu.png) | ![Choosing when an oShare link expires](docs/screenshots/windows-expiry.png) |
+| **Track the upload** | **Share the copied link** |
+| ![oShare upload progress with speed and ETA](docs/screenshots/windows-upload-progress.png) | ![oShare upload completion dialog](docs/screenshots/windows-upload-complete.png) |
+
 ## Getting started
 
 oShare is designed to run in your own AWS account.
@@ -65,7 +73,7 @@ Continue with the **[complete setup guide](docs/SETUP.md)** to connect a domain,
 
 ## Customization
 
-Use any name and HTTPS domain you want. To replace the web and Android logo together, run:
+Use any name and HTTPS domain you want. To replace the web, Android, and Windows logos together, run:
 
 ```powershell
 .\scripts\set-logo.ps1 "C:\path\to\your-logo.png"

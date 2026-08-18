@@ -257,7 +257,9 @@ try {
     throw "Missing desktop/config.json. Run install.ps1 first."
   }
   $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
-  if (-not $config.apiBaseUrl -or -not $config.uploadSecretProtected) {
+  $configProperties = $config.PSObject.Properties.Name
+  if (-not ($configProperties -contains "apiBaseUrl") -or -not $config.apiBaseUrl -or
+      -not ($configProperties -contains "uploadSecretProtected") -or -not $config.uploadSecretProtected) {
     throw "The uploader config is missing or outdated. Run install.ps1 again."
   }
   $secretBytes = [Security.Cryptography.ProtectedData]::Unprotect(
