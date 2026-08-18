@@ -9,6 +9,7 @@ $appName = "oShare"
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+Add-Type -AssemblyName System.Security
 
 Add-Type -TypeDefinition @"
 using System;
@@ -256,9 +257,15 @@ try {
     throw "Missing desktop/config.json. Run install.ps1 first."
   }
   $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
-  if (-not $config.apiBaseUrl -or -not $config.uploadSecret) {
-    throw "config.json must contain apiBaseUrl and uploadSecret."
+  if (-not $config.apiBaseUrl -or -not $config.uploadSecretProtected) {
+    throw "The uploader config is missing or outdated. Run install.ps1 again."
   }
+  $secretBytes = [Security.Cryptography.ProtectedData]::Unprotect(
+    [Convert]::FromBase64String($config.uploadSecretProtected),
+    $null,
+    [Security.Cryptography.DataProtectionScope]::CurrentUser
+  )
+  $uploadSecret = [Text.Encoding]::UTF8.GetString($secretBytes)
   if ($config.PSObject.Properties.Name -contains "appName" -and $config.appName) {
     $appName = [string]$config.appName
   }
@@ -267,7 +274,7 @@ try {
   if ($null -eq $expiresInSeconds) { exit 0 }
 
   $contentType = Get-ContentType $file.FullName
-  $headers = @{ Authorization = "Bearer $($config.uploadSecret)" }
+  $headers = @{ Authorization = "Bearer $uploadSecret" }
   $requestBody = @{
     filename = $file.Name
     size = [int64]$file.Length

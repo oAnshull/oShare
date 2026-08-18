@@ -375,7 +375,7 @@ async function cleanupExpiredShares() {
       await ddb.send(new DeleteCommand({ TableName: tableName, Key: { token: item.token } }));
       deleted += 1;
     } catch (error) {
-      console.error("cleanup failed", { token: item.token, error });
+      console.error("cleanup failed", { tokenPrefix: item.token.slice(0, 6), error });
     }
   }
 

@@ -109,6 +109,11 @@ Resources:
       EndpointConfiguration: REGIONAL
       BinaryMediaTypes:
         - "*/*"
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingBurstLimit: 20
+          ThrottlingRateLimit: 10
 
   ApiFunction:
     Type: AWS::Serverless::Function
@@ -221,6 +226,18 @@ Resources:
           Properties:
             Schedule: rate(15 minutes)
             Enabled: true
+
+  ApiFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ApiFunction}"
+      RetentionInDays: 30
+
+  CleanupFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CleanupFunction}"
+      RetentionInDays: 30
 
 Outputs:
   ApiUrl:

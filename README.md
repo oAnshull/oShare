@@ -99,3 +99,14 @@ scripts/          Branding helper
 server/           API and web dashboard
 template.yaml     AWS deployment template
 ```
+
+## Contributing and security
+
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Report
+security issues privately as described in [SECURITY.md](SECURITY.md).
+
+## License
+
+The code and bundled oShare artwork are available under the [MIT License](LICENSE).
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for bundled tooling and
+dependency license information.

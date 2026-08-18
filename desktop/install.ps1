@@ -2,9 +2,6 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$ApiBaseUrl,
 
-  [Parameter(Mandatory = $true)]
-  [string]$UploadSecret,
-
   [string]$AppName = "oShare",
 
   [string]$MenuLabel = "Upload to cloud",
@@ -14,11 +11,25 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+Add-Type -AssemblyName System.Security
+
+$UploadSecret = Read-Host "Uploader secret" -AsSecureString
+$secretPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($UploadSecret)
+try {
+  $secretText = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($secretPointer)
+  if ($secretText.Length -lt 16) { throw "Uploader secret must be at least 16 characters." }
+  $secretBytes = [Text.Encoding]::UTF8.GetBytes($secretText)
+  $protectedSecret = [Convert]::ToBase64String(
+    [Security.Cryptography.ProtectedData]::Protect($secretBytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
+  )
+} finally {
+  [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($secretPointer)
+}
 
 $configPath = Join-Path $PSScriptRoot "config.json"
 @{
   apiBaseUrl = $ApiBaseUrl.TrimEnd('/')
-  uploadSecret = $UploadSecret
+  uploadSecretProtected = $protectedSecret
   appName = $AppName
 } | ConvertTo-Json | Set-Content -LiteralPath $configPath -Encoding UTF8
 

@@ -1,5 +1,5 @@
 {
   "apiBaseUrl": "https://share.example.com",
-  "uploadSecret": "replace-with-the-same-secret-used-by-sam-deploy",
+  "uploadSecretProtected": "created-by-install.ps1-for-the-current-windows-user",
   "appName": "oShare"
 }

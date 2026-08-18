@@ -78,10 +78,14 @@ Run the installer as your normal Windows user:
 ```powershell
 .\desktop\install.ps1 `
   -ApiBaseUrl "https://share.example.com" `
-  -UploadSecret "the-same-value-used-during-deployment" `
   -AppName "oShare" `
   -MenuLabel "Upload to cloud"
 ```
+
+The installer prompts for the uploader secret without echoing it or placing it
+in shell history. Windows DPAPI encrypts it for the current user before it is
+written to `desktop/config.json`; reinstalling under another Windows account
+creates a separate configuration.
 
 For a custom context-menu icon, append `-IconPath "C:\path\to\icon.ico"` to the installer command.
 
@@ -165,6 +169,8 @@ A 1024×1024 or larger image works best. Rebuild the AWS service and Android app
 ## Keep your deployment safe
 
 - Use different values for `UploadSecret` and `AdminPassword`.
+- Treat principals that can read Lambda configuration as trusted: the two
+  secrets are Lambda environment variables encrypted at rest by AWS.
 - Do not commit `desktop/config.json`, `android/brand.properties`, `android/keystore.properties`, keystores, `samconfig.toml`, or AWS credential files.
 - Rotate the uploader secret by redeploying and reinstalling the Windows client.
 - Back up the Android signing key somewhere separate from the repository.
