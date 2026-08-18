@@ -1,0 +1,60 @@
+import java.util.Properties
+
+plugins { id "com.android.application" }
+
+def brand = new Properties()
+def brandFile = rootProject.file("brand.properties")
+if (brandFile.exists()) brandFile.withInputStream { brand.load(it) }
+
+def appName = brand.getProperty("appName", "oShare")
+def serviceUrl = brand.getProperty("serviceUrl", "https://example.com").replaceAll('/+$', '')
+def appId = brand.getProperty("applicationId", "app.oshare.client")
+def iconBackground = brand.getProperty("iconBackground", "#584AF4")
+def javaString = { value -> value.replace('\\', '\\\\').replace('"', '\\"') }
+
+def signing = new Properties()
+def signingFile = rootProject.file("keystore.properties")
+if (signingFile.exists()) signingFile.withInputStream { signing.load(it) }
+
+android {
+    namespace "app.oshare.client"
+    compileSdk 36
+
+    defaultConfig {
+        applicationId appId
+        minSdk 26
+        targetSdk 36
+        versionCode Integer.parseInt(brand.getProperty("versionCode", "1"))
+        versionName brand.getProperty("versionName", "1.0")
+        buildConfigField "String", "SERVICE_URL", "\"${javaString(serviceUrl)}\""
+        resValue "string", "app_name", appName
+        resValue "color", "brand_icon_background", iconBackground
+    }
+
+    signingConfigs {
+        release {
+            if (signingFile.exists()) {
+                storeFile rootProject.file(signing.getProperty("storeFile"))
+                storePassword signing.getProperty("storePassword")
+                keyAlias signing.getProperty("keyAlias")
+                keyPassword signing.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (signingFile.exists()) signingConfig signingConfigs.release
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+        resValues true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

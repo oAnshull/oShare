@@ -1,0 +1,232 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Self-hosted temporary file sharing with web, Windows, and Android clients
+
+Parameters:
+  UploadSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Description: Secret used by trusted upload clients
+  AdminPassword:
+    Type: String
+    NoEcho: true
+    MinLength: 16
+    Description: Shared password used to sign in to the admin panel
+  BrandName:
+    Type: String
+    Default: oShare
+    MinLength: 1
+    MaxLength: 40
+    Description: Name shown in the web admin panel
+  PublicBaseUrl:
+    Type: String
+    AllowedPattern: ^https://.+$
+    Description: Public HTTPS base URL, with no trailing slash
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+    MemorySize: 256
+    Timeout: 30
+    CodeUri: server/
+    Environment:
+      Variables:
+        BUCKET_NAME: !Ref UploadBucket
+        TABLE_NAME: !Ref SharesTable
+        UPLOAD_SECRET: !Ref UploadSecret
+        PUBLIC_BASE_URL: !Ref PublicBaseUrl
+        BRAND_NAME: !Ref BrandName
+
+Resources:
+  UploadBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - "*"
+            AllowedMethods:
+              - PUT
+            AllowedHeaders:
+              - content-type
+            ExposedHeaders:
+              - ETag
+            MaxAge: 3600
+      LifecycleConfiguration:
+        Rules:
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+          - Id: MaximumObjectAgeSafetyNet
+            Status: Enabled
+            ExpirationInDays: 8
+
+  SharesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: token
+          AttributeType: S
+        - AttributeName: gsiPk
+          AttributeType: S
+        - AttributeName: expiresAt
+          AttributeType: N
+      KeySchema:
+        - AttributeName: token
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: ExpiryIndex
+          KeySchema:
+            - AttributeName: gsiPk
+              KeyType: HASH
+            - AttributeName: expiresAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  ShareApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: v1
+      EndpointConfiguration: REGIONAL
+      BinaryMediaTypes:
+        - "*/*"
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handler.handler
+      Environment:
+        Variables:
+          ADMIN_PASSWORD: !Ref AdminPassword
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:DeleteObject
+              Resource: !Sub "${UploadBucket.Arn}/shares/*"
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !GetAtt SharesTable.Arn
+                - !Sub "${SharesTable.Arn}/index/ExpiryIndex"
+      Events:
+        CreateShare:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /shares
+            Method: post
+        CompleteShare:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /shares/{token}/complete
+            Method: post
+        CancelShare:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /shares/{token}
+            Method: delete
+        ResolveShare:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /s/{token}
+            Method: get
+        AdminPage:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /admin
+            Method: get
+        AdminLogo:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /admin/logo.png
+            Method: get
+        AdminLogin:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /admin/login
+            Method: post
+        AdminLogout:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /admin/logout
+            Method: post
+        AdminSession:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /admin/session
+            Method: get
+        AdminShares:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /admin/shares
+            Method: get
+
+  CleanupFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handler.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:DeleteObject
+              Resource: !Sub "${UploadBucket.Arn}/shares/*"
+            - Effect: Allow
+              Action:
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+              Resource:
+                - !GetAtt SharesTable.Arn
+                - !Sub "${SharesTable.Arn}/index/ExpiryIndex"
+      Events:
+        CleanupSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+            Enabled: true
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL for the v1 stage
+    Value: !Sub https://${ShareApi}.execute-api.${AWS::Region}.amazonaws.com/v1
+  BucketName:
+    Value: !Ref UploadBucket
+  TableName:
+    Value: !Ref SharesTable

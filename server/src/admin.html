@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>{{BRAND_NAME}} Admin</title>
+  <link rel="icon" href="/admin/logo.png?v=2">
+  <style>
+    :root {
+      --bg: #080b12;
+      --panel: rgba(19, 24, 36, .88);
+      --panel-2: #171d2a;
+      --line: rgba(255,255,255,.09);
+      --text: #f5f7fb;
+      --muted: #9aa6b8;
+      --accent: #8b7cff;
+      --accent-2: #5de4c7;
+      --danger: #ff6b7a;
+      --warning: #ffcc66;
+      --shadow: 0 24px 70px rgba(0,0,0,.38);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 0%, rgba(139,124,255,.16), transparent 34rem),
+        radial-gradient(circle at 90% 10%, rgba(93,228,199,.10), transparent 32rem),
+        var(--bg);
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .hidden { display: none !important; }
+    .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 56px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px;
+      background: #6354ff; box-shadow: 0 10px 30px rgba(139,124,255,.3); overflow: hidden;
+    }
+    .logo img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .brand h1 { margin: 0; font-size: 20px; letter-spacing: -.03em; }
+    .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+    .actions { display: flex; gap: 8px; }
+    .button {
+      border: 1px solid var(--line); color: var(--text); background: rgba(255,255,255,.045);
+      border-radius: 11px; padding: 10px 14px; transition: .18s ease; font-weight: 650;
+    }
+    .button:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.08); }
+    .button.primary { border-color: transparent; background: var(--accent); color: white; }
+    .button.primary:hover { background: #9b8eff; }
+    .button.danger { color: #ff9aa5; }
+    .button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
+    .icon-button { padding: 8px 10px; font-size: 13px; }
+    .panel {
+      border: 1px solid var(--line); border-radius: 18px; background: var(--panel);
+      box-shadow: var(--shadow); backdrop-filter: blur(18px);
+    }
+    .login-wrap { min-height: calc(100vh - 112px); display: grid; place-items: center; }
+    .login-card { width: min(430px, 100%); padding: 34px; }
+    .login-card .logo { margin-bottom: 24px; }
+    .login-card h2 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.04em; }
+    .login-card > p { margin: 0 0 26px; color: var(--muted); line-height: 1.55; }
+    label { display: block; color: #cbd3df; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .field {
+      width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 12px 13px;
+      color: var(--text); background: rgba(5,8,14,.72); outline: none;
+    }
+    .field:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,124,255,.13); }
+    .login-card .button { width: 100%; margin-top: 14px; padding: 12px; }
+    .error { min-height: 20px; margin-top: 12px; color: #ff9aa5; font-size: 13px; }
+    .grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; }
+    .upload-panel { padding: 20px; }
+    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .panel-title h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+    .panel-title span { color: var(--muted); font-size: 12px; }
+    .dropzone {
+      min-height: 170px; display: grid; place-items: center; text-align: center; padding: 24px;
+      border: 1px dashed rgba(139,124,255,.46); border-radius: 14px; background: rgba(139,124,255,.045);
+      transition: .18s ease;
+    }
+    .dropzone.dragging { border-color: var(--accent-2); background: rgba(93,228,199,.07); transform: scale(1.006); }
+    .drop-icon { width: 48px; height: 48px; display: grid; place-items: center; margin: 0 auto 10px; border-radius: 14px; background: rgba(139,124,255,.14); font-size: 23px; }
+    .dropzone strong { display: block; margin-bottom: 5px; }
+    .dropzone p { margin: 0; color: var(--muted); font-size: 13px; }
+    .browse { color: #b9afff; text-decoration: underline; text-underline-offset: 3px; }
+    .upload-options { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 14px; }
+    .selected-file { min-height: 20px; color: var(--muted); font-size: 12px; margin-top: 10px; overflow-wrap: anywhere; }
+    .progress { height: 7px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; margin-top: 13px; }
+    .progress > div { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg,var(--accent),var(--accent-2)); transition: width .15s; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat { padding: 18px; }
+    .stat.wide { grid-column: 1 / -1; }
+    .stat span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 9px; }
+    .stat strong { font-size: 25px; letter-spacing: -.04em; }
+    .stat small { display: block; color: var(--muted); margin-top: 5px; }
+    .files-panel { margin-top: 18px; overflow: hidden; }
+    .files-head { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); }
+    .files-head h2 { margin: 0; font-size: 17px; }
+    .controls { display: flex; gap: 9px; }
+    .controls .field { width: 220px; padding: 9px 11px; }
+    select.field { width: auto; color-scheme: dark; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 880px; }
+    th { padding: 12px 16px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; text-align: left; font-weight: 750; }
+    td { padding: 15px 16px; border-top: 1px solid rgba(255,255,255,.055); vertical-align: middle; }
+    tbody tr { transition: background .15s; }
+    tbody tr:hover { background: rgba(255,255,255,.025); }
+    .file-cell { display: flex; align-items: center; gap: 12px; min-width: 250px; }
+    .file-icon { width: 37px; height: 37px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 10px; background: rgba(139,124,255,.12); }
+    .file-name { max-width: 310px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 650; }
+    .file-type { color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 9px; font-size: 11px; font-weight: 750; }
+    .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .pill.ready { color: var(--accent-2); background: rgba(93,228,199,.09); }
+    .pill.pending { color: var(--warning); background: rgba(255,204,102,.09); }
+    .remaining { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 13px; }
+    .remaining.soon { color: var(--warning); }
+    .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .empty { padding: 52px 20px; text-align: center; color: var(--muted); }
+    .toast {
+      position: fixed; right: 20px; bottom: 20px; max-width: min(380px, calc(100% - 40px));
+      padding: 13px 16px; border: 1px solid var(--line); border-radius: 12px; background: #1c2331;
+      box-shadow: var(--shadow); transform: translateY(18px); opacity: 0; pointer-events: none; transition: .2s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.bad { border-color: rgba(255,107,122,.35); color: #ffb3bb; }
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(3, 1fr); }
+      .stat.wide { grid-column: auto; }
+      .files-head { align-items: flex-start; flex-direction: column; }
+      .controls { width: 100%; }
+      .controls .field { flex: 1; width: auto; }
+    }
+    @media (max-width: 560px) {
+      .shell { width: min(calc(100% - 20px), 1180px); padding-top: 16px; }
+      .topbar { align-items: center; gap: 10px; }
+      .brand p { display: none; }
+      .brand { min-width: 0; gap: 10px; }
+      .brand h1 { font-size: 18px; white-space: nowrap; }
+      .logo { width: 40px; height: 40px; }
+      .actions { flex: 0 0 auto; }
+      .actions .button { padding: 9px 10px; }
+      #logoutButton { font-size: 0; }
+      #logoutButton::after { content: "Exit"; font-size: 13px; }
+      .button .optional { display: none; }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .stat.wide { grid-column: 1 / -1; }
+      .upload-options { grid-template-columns: 1fr; }
+      .upload-options .button { width: 100%; }
+      .controls { flex-direction: column; }
+      .login-card { padding: 26px; }
+      .files-head { padding: 17px; }
+      .table-wrap { overflow: visible; }
+      table, tbody { display: block; width: 100%; min-width: 0; }
+      thead { display: none; }
+      tbody { padding: 0 12px 12px; }
+      tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.018); }
+      td { display: block; min-width: 0; padding: 0; border: 0; }
+      td:first-child, td:last-child { grid-column: 1 / -1; }
+      td:nth-child(2)::before, td:nth-child(3)::before, td:nth-child(4)::before, td:nth-child(5)::before {
+        display: block; margin-bottom: 5px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase;
+      }
+      td:nth-child(2)::before { content: "Size"; }
+      td:nth-child(3)::before { content: "Status"; }
+      td:nth-child(4)::before { content: "Remaining"; }
+      td:nth-child(5)::before { content: "Uploaded"; }
+      .file-cell { min-width: 0; }
+      .file-name { max-width: calc(100vw - 112px); }
+      .row-actions { justify-content: stretch; }
+      .row-actions .button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section id="loginView" class="login-wrap hidden">
+      <form id="loginForm" class="panel login-card">
+        <div class="logo"><img src="/admin/logo.png?v=2" alt=""></div>
+        <h2>Welcome back</h2>
+        <p>Sign in to manage active files, upload new shares, and remove anything instantly.</p>
+        <label for="password">Admin password</label>
+        <input id="password" class="field" type="password" autocomplete="current-password" required autofocus>
+        <button id="loginButton" class="button primary" type="submit">Sign in</button>
+        <div id="loginError" class="error" role="alert"></div>
+      </form>
+    </section>
+
+    <section id="dashboard" class="hidden">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo"><img src="/admin/logo.png?v=2" alt=""></div>
+          <div><h1>{{BRAND_NAME}} Admin</h1><p>Private temporary file control</p></div>
+        </div>
+        <div class="actions">
+          <button id="refreshButton" class="button" type="button">↻ <span class="optional">Refresh</span></button>
+          <button id="logoutButton" class="button" type="button">Log out</button>
+        </div>
+      </header>
+
+      <div class="grid">
+        <section class="panel upload-panel">
+          <div class="panel-title"><h2>Upload a file</h2><span>Up to 5 GB</span></div>
+          <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Choose a file to upload">
+            <div>
+              <div class="drop-icon">↑</div>
+              <strong>Drop a file here</strong>
+              <p>or <span class="browse">browse your computer</span></p>
+            </div>
+          </div>
+          <input id="fileInput" type="file" hidden>
+          <div id="selectedFile" class="selected-file">No file selected</div>
+          <div class="upload-options">
+            <div>
+              <label for="expiry">Keep available for</label>
+              <select id="expiry" class="field">
+                <option value="3600">1 hour</option>
+                <option value="21600">6 hours</option>
+                <option value="86400" selected>1 day</option>
+                <option value="259200">3 days</option>
+                <option value="604800">7 days</option>
+              </select>
+            </div>
+            <button id="uploadButton" class="button primary" type="button" disabled>Upload file</button>
+          </div>
+          <div id="progress" class="progress hidden"><div></div></div>
+        </section>
+
+        <section class="stats" aria-label="Storage summary">
+          <div class="panel stat"><span>Active files</span><strong id="activeCount">—</strong><small>ready and pending</small></div>
+          <div class="panel stat"><span>Active data</span><strong id="activeSize">—</strong><small>current file sizes</small></div>
+          <div class="panel stat wide"><span>Expiring soon</span><strong id="expiringSoon">—</strong><small>within the next hour</small></div>
+        </section>
+      </div>
+
+      <section class="panel files-panel">
+        <div class="files-head">
+          <h2>Active files</h2>
+          <div class="controls">
+            <input id="search" class="field" type="search" placeholder="Search files…" aria-label="Search files">
+            <select id="statusFilter" class="field" aria-label="Filter by status">
+              <option value="all">All statuses</option>
+              <option value="ready">Ready</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>File</th><th>Size</th><th>Status</th><th>Time remaining</th><th>Uploaded</th><th aria-label="Actions"></th></tr></thead>
+            <tbody id="fileRows"></tbody>
+          </table>
+          <div id="emptyState" class="empty hidden">No active files match this view.</div>
+        </div>
+      </section>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const loginView = document.getElementById("loginView");
+    const dashboard = document.getElementById("dashboard");
+    const loginForm = document.getElementById("loginForm");
+    const loginButton = document.getElementById("loginButton");
+    const loginError = document.getElementById("loginError");
+    const password = document.getElementById("password");
+    const fileInput = document.getElementById("fileInput");
+    const dropzone = document.getElementById("dropzone");
+    const selectedFile = document.getElementById("selectedFile");
+    const uploadButton = document.getElementById("uploadButton");
+    const progress = document.getElementById("progress");
+    const progressBar = progress.firstElementChild;
+    const rows = document.getElementById("fileRows");
+    const emptyState = document.getElementById("emptyState");
+    const search = document.getElementById("search");
+    const statusFilter = document.getElementById("statusFilter");
+    const toast = document.getElementById("toast");
+    let shares = [];
+    let chosenFile = null;
+    let toastTimer;
+
+    function showToast(message, bad = false) {
+      clearTimeout(toastTimer);
+      toast.textContent = message;
+      toast.classList.toggle("bad", bad);
+      toast.classList.add("show");
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 3200);
+    }
+
+    async function request(path, options = {}) {
+      const response = await fetch(path, {
+        credentials: "same-origin",
+        ...options,
+        headers: { "content-type": "application/json", ...(options.headers || {}) }
+      });
+      if (response.status === 401 && path !== "/admin/login") {
+        showLogin();
+      }
+      const contentType = response.headers.get("content-type") || "";
+      const body = contentType.includes("application/json") ? await response.json() : await response.text();
+      if (!response.ok) throw new Error(body.error || body || "Request failed");
+      return body;
+    }
+
+    function showLogin() {
+      dashboard.classList.add("hidden");
+      loginView.classList.remove("hidden");
+      password.focus();
+    }
+
+    function showDashboard() {
+      loginView.classList.add("hidden");
+      dashboard.classList.remove("hidden");
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes < 1) return "0 B";
+      const units = ["B", "KB", "MB", "GB"];
+      const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      return `${(bytes / Math.pow(1024, index)).toFixed(index ? 1 : 0)} ${units[index]}`;
+    }
+
+    function formatDate(seconds) {
+      return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(seconds * 1000);
+    }
+
+    function remainingText(expiresAt) {
+      let seconds = Math.max(0, expiresAt - Math.floor(Date.now() / 1000));
+      const days = Math.floor(seconds / 86400); seconds %= 86400;
+      const hours = Math.floor(seconds / 3600); seconds %= 3600;
+      const minutes = Math.floor(seconds / 60);
+      if (days) return `${days}d ${hours}h`;
+      if (hours) return `${hours}h ${minutes}m`;
+      return `${minutes}m ${seconds % 60}s`;
+    }
+
+    function iconFor(contentType) {
+      if ((contentType || "").startsWith("image/")) return "▧";
+      if ((contentType || "").startsWith("video/")) return "▶";
+      if ((contentType || "").startsWith("audio/")) return "♪";
+      if ((contentType || "").includes("pdf")) return "PDF";
+      if ((contentType || "").startsWith("text/")) return "T";
+      return "◇";
+    }
+
+    function element(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function render() {
+      const query = search.value.trim().toLowerCase();
+      const status = statusFilter.value;
+      const visible = shares.filter((share) =>
+        (status === "all" || share.status === status) &&
+        (!query || share.filename.toLowerCase().includes(query) || (share.contentType || "").toLowerCase().includes(query))
+      );
+      rows.replaceChildren();
+      emptyState.classList.toggle("hidden", visible.length !== 0);
+
+      for (const share of visible) {
+        const row = document.createElement("tr");
+        const fileCell = element("td");
+        const fileWrap = element("div", "file-cell");
+        fileWrap.append(element("div", "file-icon", iconFor(share.contentType)));
+        const details = element("div");
+        const name = element("div", "file-name", share.filename);
+        name.title = share.filename;
+        details.append(name, element("div", "file-type", share.contentType || "application/octet-stream"));
+        fileWrap.append(details); fileCell.append(fileWrap);
+
+        const size = element("td", "muted", formatBytes(share.expectedSize));
+        const statusCell = element("td");
+        statusCell.append(element("span", `pill ${share.status}`, share.status));
+        const remainingCell = element("td", "remaining");
+        remainingCell.dataset.expires = share.expiresAt;
+        const uploaded = element("td", "muted", formatDate(share.createdAt));
+        const actions = element("td");
+        const actionWrap = element("div", "row-actions");
+        for (const [label, action, danger] of [["Copy", "copy", false], ["Open", "open", false], ["Delete", "delete", true]]) {
+          const button = element("button", `button icon-button${danger ? " danger" : ""}`, label);
+          button.type = "button"; button.dataset.action = action; button.dataset.token = share.token;
+          if (share.status !== "ready" && action !== "delete") button.disabled = true;
+          actionWrap.append(button);
+        }
+        actions.append(actionWrap);
+        row.append(fileCell, size, statusCell, remainingCell, uploaded, actions);
+        rows.append(row);
+      }
+      updateCountdowns();
+    }
+
+    function updateCountdowns() {
+      document.querySelectorAll("[data-expires]").forEach((node) => {
+        const remaining = Number(node.dataset.expires) - Math.floor(Date.now() / 1000);
+        node.textContent = remainingText(Number(node.dataset.expires));
+        node.classList.toggle("soon", remaining <= 3600);
+      });
+    }
+
+    function updateStats() {
+      document.getElementById("activeCount").textContent = shares.length;
+      document.getElementById("activeSize").textContent = formatBytes(shares.reduce((total, share) => total + share.expectedSize, 0));
+      const now = Math.floor(Date.now() / 1000);
+      document.getElementById("expiringSoon").textContent = shares.filter((share) => share.expiresAt - now <= 3600).length;
+    }
+
+    async function loadShares(showMessage = false) {
+      try {
+        shares = (await request("/admin/shares")).shares;
+        updateStats(); render();
+        if (showMessage) showToast("File list refreshed");
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    }
+
+    function chooseFile(file) {
+      chosenFile = file || null;
+      selectedFile.textContent = chosenFile ? `${chosenFile.name} · ${formatBytes(chosenFile.size)}` : "No file selected";
+      uploadButton.disabled = !chosenFile;
+    }
+
+    function putFile(url, file, contentType) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("PUT", url);
+        xhr.setRequestHeader("Content-Type", contentType);
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) progressBar.style.width = `${Math.round(event.loaded / event.total * 100)}%`;
+        };
+        xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error("Storage upload failed"));
+        xhr.onerror = () => reject(new Error("Storage upload failed"));
+        xhr.send(file);
+      });
+    }
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault(); loginError.textContent = ""; loginButton.disabled = true;
+      try {
+        await request("/admin/login", { method: "POST", body: JSON.stringify({ password: password.value }) });
+        password.value = ""; showDashboard(); await loadShares();
+      } catch (error) {
+        loginError.textContent = error.message;
+      } finally { loginButton.disabled = false; }
+    });
+
+    document.getElementById("logoutButton").addEventListener("click", async () => {
+      try { await request("/admin/logout", { method: "POST", body: "{}" }); } catch {}
+      shares = []; showLogin();
+    });
+    document.getElementById("refreshButton").addEventListener("click", () => loadShares(true));
+    search.addEventListener("input", render);
+    statusFilter.addEventListener("change", render);
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") fileInput.click(); });
+    fileInput.addEventListener("change", () => chooseFile(fileInput.files[0]));
+    for (const eventName of ["dragenter", "dragover"]) dropzone.addEventListener(eventName, (event) => { event.preventDefault(); dropzone.classList.add("dragging"); });
+    for (const eventName of ["dragleave", "drop"]) dropzone.addEventListener(eventName, (event) => { event.preventDefault(); dropzone.classList.remove("dragging"); });
+    dropzone.addEventListener("drop", (event) => chooseFile(event.dataTransfer.files[0]));
+
+    uploadButton.addEventListener("click", async () => {
+      if (!chosenFile) return;
+      if (chosenFile.size > 5 * 1024 * 1024 * 1024) return showToast("Files must be 5 GB or smaller", true);
+      uploadButton.disabled = true; progress.classList.remove("hidden"); progressBar.style.width = "0";
+      try {
+        const contentType = chosenFile.type || "application/octet-stream";
+        const share = await request("/shares", { method: "POST", body: JSON.stringify({
+          filename: chosenFile.name, size: chosenFile.size, contentType,
+          expiresInSeconds: Number(document.getElementById("expiry").value)
+        }) });
+        await putFile(share.uploadUrl, chosenFile, contentType);
+        progressBar.style.width = "100%";
+        const complete = await request(`/shares/${encodeURIComponent(share.token)}/complete`, { method: "POST", body: "{}" });
+        let copied = true;
+        try { await navigator.clipboard.writeText(complete.shareUrl); } catch { copied = false; }
+        showToast(copied ? "Uploaded — share link copied" : "Uploaded — use Copy in the file list");
+        fileInput.value = ""; chooseFile(null); await loadShares();
+      } catch (error) {
+        showToast(error.message, true);
+      } finally {
+        progress.classList.add("hidden"); progressBar.style.width = "0"; uploadButton.disabled = !chosenFile;
+      }
+    });
+
+    rows.addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-action]");
+      if (!button) return;
+      const share = shares.find((item) => item.token === button.dataset.token);
+      if (!share) return;
+      if (button.dataset.action === "copy") {
+        await navigator.clipboard.writeText(share.shareUrl); showToast("Share link copied");
+      } else if (button.dataset.action === "open") {
+        window.open(share.shareUrl, "_blank", "noopener");
+      } else if (button.dataset.action === "delete" && confirm(`Delete ${share.filename}? This cannot be undone.`)) {
+        button.disabled = true;
+        try {
+          await request(`/shares/${encodeURIComponent(share.token)}`, { method: "DELETE", body: "{}" });
+          shares = shares.filter((item) => item.token !== share.token); updateStats(); render(); showToast("File deleted");
+        } catch (error) { showToast(error.message, true); button.disabled = false; }
+      }
+    });
+
+    (async () => {
+      try { await request("/admin/session"); showDashboard(); await loadShares(); }
+      catch { showLogin(); }
+    })();
+    setInterval(updateCountdowns, 1000);
+    setInterval(() => { if (!dashboard.classList.contains("hidden")) loadShares(); }, 30000);
+  </script>
+</body>
+</html>

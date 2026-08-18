@@ -1,0 +1,6 @@
+serviceUrl=https://share.example.com
+appName=oShare
+applicationId=com.example.oshare
+iconBackground=#584AF4
+versionCode=1
+versionName=1.0

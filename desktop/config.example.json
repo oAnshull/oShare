@@ -1,0 +1,5 @@
+{
+  "apiBaseUrl": "https://share.example.com",
+  "uploadSecret": "replace-with-the-same-secret-used-by-sam-deploy",
+  "appName": "oShare"
+}
