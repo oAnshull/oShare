@@ -16,6 +16,9 @@ test("admin page ships parseable browser logic and core controls", () => {
   assert.match(html, />Downloads</);
   assert.match(html, /\["\+1 day", "extend", false\]/);
   assert.match(html, /async function completeUpload\(token\)/);
+  assert.match(html, /function enhanceSelect\(select\)/);
+  assert.match(html, /document\.querySelectorAll\("select\.field"\)\.forEach\(enhanceSelect\)/);
+  assert.match(html, /--accent: #8b5cf6/);
   assert.match(html, />Processing</);
   assert.doesNotMatch(html, /cumulative since usage tracking was enabled/);
 });
