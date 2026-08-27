@@ -151,7 +151,8 @@ function Get-ContentType([string]$Path) {
   $extension = [System.IO.Path]::GetExtension($Path).ToLowerInvariant()
   if ($extension) {
     $registryPath = "Registry::HKEY_CLASSES_ROOT\$extension"
-    $contentType = (Get-ItemProperty -LiteralPath $registryPath -Name "Content Type" -ErrorAction SilentlyContinue)."Content Type"
+    $properties = Get-ItemProperty -LiteralPath $registryPath -ErrorAction SilentlyContinue
+    $contentType = if ($properties -and $properties.PSObject.Properties.Name -contains "Content Type") { $properties."Content Type" } else { $null }
     if ($contentType) { return $contentType }
   }
   return "application/octet-stream"
@@ -293,10 +294,13 @@ try {
 
   Show-UploadProgress $file $share.uploadUrl $contentType $appName
 
-  $complete = Invoke-RestMethod `
-    -Uri "$($config.apiBaseUrl.TrimEnd('/'))/shares/$($share.token)/complete" `
-    -Method Post `
-    -Headers $headers
+  do {
+    $complete = Invoke-RestMethod `
+      -Uri "$($config.apiBaseUrl.TrimEnd('/'))/shares/$($share.token)/complete" `
+      -Method Post `
+      -Headers $headers
+    if ($complete.processing) { Start-Sleep -Seconds 5 }
+  } while ($complete.processing)
 
   Set-Clipboard -Value $complete.shareUrl
   [void][System.Windows.Forms.MessageBox]::Show(

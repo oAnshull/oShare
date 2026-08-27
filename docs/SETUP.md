@@ -162,6 +162,8 @@ A 1024×1024 or larger image works best. Rebuild the AWS service and Android app
 ## Limits
 
 - Maximum file size: 5 GB
+- Videos larger than 80 MB are processed by AWS Elemental MediaConvert into a 720p Discord rendition; the original remains available on the share page and for download
+- MediaConvert processing is billed separately by AWS based on video duration
 - Expiry choices: 1 hour, 6 hours, 1 day, 3 days, and 7 days
 - Expired links stop working immediately; storage cleanup runs every 15 minutes
 - The admin login lasts for eight hours

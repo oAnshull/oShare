@@ -158,7 +158,11 @@ public final class MainActivity extends Activity {
                 JSONObject created = api("POST", "/shares", request);
                 token = created.getString("token");
                 upload(uri, file, created.getString("uploadUrl"));
-                JSONObject complete = api("POST", "/shares/" + token + "/complete", new JSONObject());
+                JSONObject complete;
+                do {
+                    complete = api("POST", "/shares/" + token + "/complete", new JSONObject());
+                    if (complete.optBoolean("processing")) Thread.sleep(5000);
+                } while (complete.optBoolean("processing"));
                 String link = complete.getString("shareUrl");
                 copy(link);
                 showComplete(link);

@@ -115,6 +115,36 @@ Resources:
           ThrottlingBurstLimit: 20
           ThrottlingRateLimit: 10
 
+  MediaConvertRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: mediaconvert.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: TranscodeShareVideos
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
+                Resource: !GetAtt UploadBucket.Arn
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${UploadBucket.Arn}/shares/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub "${UploadBucket.Arn}/discord/*"
+
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -122,6 +152,7 @@ Resources:
       Environment:
         Variables:
           ADMIN_PASSWORD: !Ref AdminPassword
+          MEDIACONVERT_ROLE_ARN: !GetAtt MediaConvertRole.Arn
       Policies:
         - Statement:
             - Effect: Allow
@@ -129,7 +160,9 @@ Resources:
                 - s3:GetObject
                 - s3:PutObject
                 - s3:DeleteObject
-              Resource: !Sub "${UploadBucket.Arn}/shares/*"
+              Resource:
+                - !Sub "${UploadBucket.Arn}/shares/*"
+                - !Sub "${UploadBucket.Arn}/discord/*"
             - Effect: Allow
               Action:
                 - dynamodb:GetItem
@@ -141,6 +174,18 @@ Resources:
               Resource:
                 - !GetAtt SharesTable.Arn
                 - !Sub "${SharesTable.Arn}/index/ExpiryIndex"
+            - Effect: Allow
+              Action:
+                - mediaconvert:CreateJob
+                - mediaconvert:GetJob
+                - mediaconvert:CancelJob
+              Resource: "*"
+            - Effect: Allow
+              Action: iam:PassRole
+              Resource: !GetAtt MediaConvertRole.Arn
+              Condition:
+                StringEquals:
+                  iam:PassedToService: mediaconvert.amazonaws.com
       Events:
         CreateShare:
           Type: Api
@@ -202,6 +247,12 @@ Resources:
             RestApiId: !Ref ShareApi
             Path: /admin/shares
             Method: get
+        ExtendAdminShare:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ShareApi
+            Path: /admin/shares/{token}
+            Method: patch
 
   CleanupFunction:
     Type: AWS::Serverless::Function
@@ -212,7 +263,9 @@ Resources:
             - Effect: Allow
               Action:
                 - s3:DeleteObject
-              Resource: !Sub "${UploadBucket.Arn}/shares/*"
+              Resource:
+                - !Sub "${UploadBucket.Arn}/shares/*"
+                - !Sub "${UploadBucket.Arn}/discord/*"
             - Effect: Allow
               Action:
                 - dynamodb:DeleteItem
@@ -220,24 +273,15 @@ Resources:
               Resource:
                 - !GetAtt SharesTable.Arn
                 - !Sub "${SharesTable.Arn}/index/ExpiryIndex"
+            - Effect: Allow
+              Action: mediaconvert:CancelJob
+              Resource: "*"
       Events:
         CleanupSchedule:
           Type: Schedule
           Properties:
             Schedule: rate(15 minutes)
             Enabled: true
-
-  ApiFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${ApiFunction}"
-      RetentionInDays: 30
-
-  CleanupFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${CleanupFunction}"
-      RetentionInDays: 30
 
 Outputs:
   ApiUrl:

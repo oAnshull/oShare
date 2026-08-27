@@ -97,6 +97,15 @@
     .stat span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 9px; }
     .stat strong { font-size: 25px; letter-spacing: -.04em; }
     .stat small { display: block; color: var(--muted); margin-top: 5px; }
+    .meter-row { display: grid; grid-template-columns: 92px 1fr auto; gap: 10px; align-items: center; margin-top: 12px; }
+    .meter-label { color: var(--muted); font-size: 12px; }
+    .meter-track { height: 8px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.07); }
+    .meter-fill { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg,var(--accent),#b8adff); transition: width .35s ease; }
+    .meter-fill.outgoing { background: linear-gradient(90deg,var(--accent-2),#7ef0dc); }
+    .meter-value { min-width: 64px; text-align: right; font-size: 12px; font-weight: 700; }
+    .network-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .network-head span { margin: 0; }
+    .range-select { width: auto; min-width: 112px; padding: 6px 28px 6px 9px; font-size: 12px; }
     .files-panel { margin-top: 18px; overflow: hidden; }
     .files-head { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 14px; border-bottom: 1px solid var(--line); }
     .files-head h2 { margin: 0; font-size: 17px; }
@@ -104,7 +113,7 @@
     .controls .field { width: 220px; padding: 9px 11px; }
     select.field { width: auto; color-scheme: dark; }
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 880px; }
+    table { width: 100%; border-collapse: collapse; min-width: 980px; }
     th { padding: 12px 16px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; text-align: left; font-weight: 750; }
     td { padding: 15px 16px; border-top: 1px solid rgba(255,255,255,.055); vertical-align: middle; }
     tbody tr { transition: background .15s; }
@@ -117,7 +126,7 @@
     .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 9px; font-size: 11px; font-weight: 750; }
     .pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
     .pill.ready { color: var(--accent-2); background: rgba(93,228,199,.09); }
-    .pill.pending { color: var(--warning); background: rgba(255,204,102,.09); }
+    .pill.pending, .pill.processing { color: var(--warning); background: rgba(255,204,102,.09); }
     .remaining { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 13px; }
     .remaining.soon { color: var(--warning); }
     .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
@@ -163,13 +172,14 @@
       tbody tr { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; padding: 15px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.018); }
       td { display: block; min-width: 0; padding: 0; border: 0; }
       td:first-child, td:last-child { grid-column: 1 / -1; }
-      td:nth-child(2)::before, td:nth-child(3)::before, td:nth-child(4)::before, td:nth-child(5)::before {
+      td:nth-child(2)::before, td:nth-child(3)::before, td:nth-child(4)::before, td:nth-child(5)::before, td:nth-child(6)::before {
         display: block; margin-bottom: 5px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase;
       }
       td:nth-child(2)::before { content: "Size"; }
       td:nth-child(3)::before { content: "Status"; }
       td:nth-child(4)::before { content: "Remaining"; }
       td:nth-child(5)::before { content: "Uploaded"; }
+      td:nth-child(6)::before { content: "Downloads"; }
       .file-cell { min-width: 0; }
       .file-name { max-width: calc(100vw - 112px); }
       .row-actions { justify-content: stretch; }
@@ -231,10 +241,15 @@
           <div id="progress" class="progress hidden"><div></div></div>
         </section>
 
-        <section class="stats" aria-label="Storage summary">
+        <section class="stats" aria-label="Usage summary">
           <div class="panel stat"><span>Active files</span><strong id="activeCount">—</strong><small>ready and pending</small></div>
-          <div class="panel stat"><span>Active data</span><strong id="activeSize">—</strong><small>current file sizes</small></div>
-          <div class="panel stat wide"><span>Expiring soon</span><strong id="expiringSoon">—</strong><small>within the next hour</small></div>
+          <div class="panel stat"><span>Expiring soon</span><strong id="expiringSoon">—</strong><small>within the next hour</small></div>
+          <div class="panel stat wide"><span>Storage used</span><strong id="storedBytes">—</strong><small>active files currently stored</small></div>
+          <div class="panel stat wide">
+            <div class="network-head"><span>Network usage</span><select id="networkRange" class="field range-select" aria-label="Network usage timeframe"><option value="today">Today</option><option value="week">This week</option><option value="month">This month</option><option value="all">All time</option></select></div>
+            <div class="meter-row"><span class="meter-label">↑ Incoming</span><div class="meter-track"><div id="incomingBar" class="meter-fill"></div></div><strong id="incomingBytes" class="meter-value">—</strong></div>
+            <div class="meter-row"><span class="meter-label">↓ Outgoing</span><div class="meter-track"><div id="outgoingBar" class="meter-fill outgoing"></div></div><strong id="outgoingBytes" class="meter-value">—</strong></div>
+          </div>
         </section>
       </div>
 
@@ -247,12 +262,13 @@
               <option value="all">All statuses</option>
               <option value="ready">Ready</option>
               <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
             </select>
           </div>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>File</th><th>Size</th><th>Status</th><th>Time remaining</th><th>Uploaded</th><th aria-label="Actions"></th></tr></thead>
+            <thead><tr><th>File</th><th>Size</th><th>Status</th><th>Time remaining</th><th>Uploaded</th><th>Downloads</th><th aria-label="Actions"></th></tr></thead>
             <tbody id="fileRows"></tbody>
           </table>
           <div id="emptyState" class="empty hidden">No active files match this view.</div>
@@ -281,6 +297,7 @@
     const statusFilter = document.getElementById("statusFilter");
     const toast = document.getElementById("toast");
     let shares = [];
+    let usageStats = { storedBytes: 0, traffic: {} };
     let chosenFile = null;
     let toastTimer;
 
@@ -382,16 +399,17 @@
         const remainingCell = element("td", "remaining");
         remainingCell.dataset.expires = share.expiresAt;
         const uploaded = element("td", "muted", formatDate(share.createdAt));
+        const downloads = element("td", "muted", String(share.downloadCount));
         const actions = element("td");
         const actionWrap = element("div", "row-actions");
-        for (const [label, action, danger] of [["Copy", "copy", false], ["Open", "open", false], ["Delete", "delete", true]]) {
+        for (const [label, action, danger] of [["Copy", "copy", false], ["Open", "open", false], ["+1 day", "extend", false], ["Delete", "delete", true]]) {
           const button = element("button", `button icon-button${danger ? " danger" : ""}`, label);
           button.type = "button"; button.dataset.action = action; button.dataset.token = share.token;
           if (share.status !== "ready" && action !== "delete") button.disabled = true;
           actionWrap.append(button);
         }
         actions.append(actionWrap);
-        row.append(fileCell, size, statusCell, remainingCell, uploaded, actions);
+        row.append(fileCell, size, statusCell, remainingCell, uploaded, downloads, actions);
         rows.append(row);
       }
       updateCountdowns();
@@ -407,14 +425,21 @@
 
     function updateStats() {
       document.getElementById("activeCount").textContent = shares.length;
-      document.getElementById("activeSize").textContent = formatBytes(shares.reduce((total, share) => total + share.expectedSize, 0));
       const now = Math.floor(Date.now() / 1000);
       document.getElementById("expiringSoon").textContent = shares.filter((share) => share.expiresAt - now <= 3600).length;
+      document.getElementById("storedBytes").textContent = formatBytes(usageStats.storedBytes);
+      const traffic = usageStats.traffic[document.getElementById("networkRange").value] || { uploadedBytes: 0, downloadedBytes: 0 };
+      document.getElementById("incomingBytes").textContent = formatBytes(traffic.uploadedBytes);
+      document.getElementById("outgoingBytes").textContent = formatBytes(traffic.downloadedBytes);
+      const largest = Math.max(traffic.uploadedBytes, traffic.downloadedBytes, 1);
+      document.getElementById("incomingBar").style.width = `${traffic.uploadedBytes / largest * 100}%`;
+      document.getElementById("outgoingBar").style.width = `${traffic.downloadedBytes / largest * 100}%`;
     }
 
     async function loadShares(showMessage = false) {
       try {
-        shares = (await request("/admin/shares")).shares;
+        const result = await request("/admin/shares");
+        shares = result.shares; usageStats = result.stats;
         updateStats(); render();
         if (showMessage) showToast("File list refreshed");
       } catch (error) {
@@ -442,6 +467,18 @@
       });
     }
 
+    async function completeUpload(token) {
+      let result;
+      do {
+        result = await request(`/shares/${encodeURIComponent(token)}/complete`, { method: "POST", body: "{}" });
+        if (result.processing) {
+          showToast("Upload complete — preparing Discord video…");
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+      } while (result.processing);
+      return result;
+    }
+
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault(); loginError.textContent = ""; loginButton.disabled = true;
       try {
@@ -459,6 +496,7 @@
     document.getElementById("refreshButton").addEventListener("click", () => loadShares(true));
     search.addEventListener("input", render);
     statusFilter.addEventListener("change", render);
+    document.getElementById("networkRange").addEventListener("change", updateStats);
     dropzone.addEventListener("click", () => fileInput.click());
     dropzone.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") fileInput.click(); });
     fileInput.addEventListener("change", () => chooseFile(fileInput.files[0]));
@@ -478,7 +516,7 @@
         }) });
         await putFile(share.uploadUrl, chosenFile, contentType);
         progressBar.style.width = "100%";
-        const complete = await request(`/shares/${encodeURIComponent(share.token)}/complete`, { method: "POST", body: "{}" });
+        const complete = await completeUpload(share.token);
         let copied = true;
         try { await navigator.clipboard.writeText(complete.shareUrl); } catch { copied = false; }
         showToast(copied ? "Uploaded — share link copied" : "Uploaded — use Copy in the file list");
@@ -499,6 +537,12 @@
         await navigator.clipboard.writeText(share.shareUrl); showToast("Share link copied");
       } else if (button.dataset.action === "open") {
         window.open(share.shareUrl, "_blank", "noopener");
+      } else if (button.dataset.action === "extend") {
+        button.disabled = true;
+        try {
+          const result = await request(`/admin/shares/${encodeURIComponent(share.token)}`, { method: "PATCH", body: "{}" });
+          share.expiresAt = result.expiresAt; updateStats(); render(); showToast("File extended by 1 day");
+        } catch (error) { showToast(error.message, true); button.disabled = false; }
       } else if (button.dataset.action === "delete" && confirm(`Delete ${share.filename}? This cannot be undone.`)) {
         button.disabled = true;
         try {

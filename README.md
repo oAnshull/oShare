@@ -33,8 +33,11 @@ You host it on your own AWS account and can use your own domain, name, and logo.
 - Drag-and-drop web uploads
 - Upload progress, speed, and ETA
 - Automatic link copying
+- Inline image and video previews with rich social embeds
+- Automatic Discord-sized video renditions and thumbnails for large clips
 - Searchable admin dashboard
 - View file type, size, upload time, and time remaining
+- Monitor stored data and cumulative incoming/outgoing traffic
 - Copy, open, or delete any active share
 - Custom domain and branding
 
